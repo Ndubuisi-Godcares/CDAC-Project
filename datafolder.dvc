@@ -1,0 +1,6 @@
+outs:
+- md5: cccac15efd22775f36f50c5e55ef25f0.dir
+  size: 256403301
+  nfiles: 1
+  hash: md5
+  path: datafolder
