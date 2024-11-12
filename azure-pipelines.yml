@@ -62,3 +62,12 @@ steps:
     echo "Add other tasks to build, test, and deploy your project."
     echo "For example, use the model in your IDS pipeline for detection."
   displayName: 'Run additional tasks'
+
+# Step 4: (Optional) Add post-deployment validation or test tasks
+- script: |
+    echo "Running tests to validate model performance in the target environment..."
+    # Example: Test the model by sending a sample request to the deployed service or checking logs
+    # You can customize this step with your validation tasks
+    curl -X POST https://<your_model_endpoint> -d '{"data": "<sample_data>"}'
+    echo "Model test completed."
+  displayName: 'Run post-deployment tests'
