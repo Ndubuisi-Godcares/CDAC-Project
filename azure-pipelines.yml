@@ -1,0 +1,64 @@
+trigger:
+  - main  # Trigger on changes to the main branch
+
+pool:
+  vmImage: ubuntu-latest  # Use an Ubuntu-based agent
+
+variables:
+  AZURE_CONTAINER_NAME: 'cdaccontainer'  # Set the container name directly
+  AZURE_STORAGE_ACCOUNT_NAME: 'datastoragecdac'  # Set the storage account name directly
+  MODEL_PATH: 'models/xgb_final_model.pkl'  # Path to the model in Blob Storage
+  RESOURCE_GROUP: 'CDACProject'  # Set resource group directly
+  DEPLOYMENT_TARGET: 'production'  # Define your deployment environment
+  MODEL_NAME: 'ransomware-detection-model'  # Set model name
+
+steps:
+# Step 1: Use Azure CLI to download model from Blob Storage
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: 'azure-resource-connection'  # Service connection with Workload Identity Federation
+    scriptType: 'bash'  # Use bash script for shell commands
+    scriptLocation: 'inlineScript'  # Inline script
+    inlineScript: |
+      echo "Downloading model from Azure Blob Storage..."
+      az storage blob download \
+        --account-name $(AZURE_STORAGE_ACCOUNT_NAME) \
+        --container-name $(AZURE_CONTAINER_NAME) \
+        --name $(MODEL_PATH) \
+        --file $(Build.ArtifactStagingDirectory)/xgb_final_model.pkl \
+        --auth-mode login  # Use Azure CLI login via federated identity
+      echo "Model downloaded successfully."
+
+# Step 2: Deploy model based on deployment target (production or staging)
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: 'azure-resource-connection'  # Service connection with Workload Identity Federation
+    scriptType: 'bash'  # Use bash script for shell commands
+    scriptLocation: 'inlineScript'  # Inline script
+    inlineScript: |
+      echo "Deploying model to $(DEPLOYMENT_TARGET) environment..."
+      # Customize the deployment step for your environment (e.g., production or staging)
+      if [ "$(DEPLOYMENT_TARGET)" == "production" ]; then
+        echo "Deploying to production..."
+        # Add production-specific deployment commands here
+        az ml model deploy \
+          --name $(MODEL_NAME) \
+          --model $(Build.ArtifactStagingDirectory)/xgb_final_model.pkl \
+          --resource-group $(RESOURCE_GROUP) \
+          --overwrite
+      else
+        echo "Deploying to staging..."
+        # Add staging-specific deployment commands here
+        az ml model deploy \
+          --name $(MODEL_NAME)-staging \
+          --model $(Build.ArtifactStagingDirectory)/xgb_final_model.pkl \
+          --resource-group $(RESOURCE_GROUP) \
+          --overwrite
+      fi
+      echo "Model deployed successfully."
+
+# Step 3: Additional tasks for building, testing, or using the model in your IDS pipeline
+- script: |
+    echo "Add other tasks to build, test, and deploy your project."
+    echo "For example, use the model in your IDS pipeline for detection."
+  displayName: 'Run additional tasks'
